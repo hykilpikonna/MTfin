@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-def run_workflow(imdb_id: str, dl_dir: str, jellyfin_dir: str, logs_dir: Path):
+def run_workflow(imdb_id: str, dl_dir: str, jellyfin_dir: str, logs_dir: Path, errors_dir: Path):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = logs_dir / f"{imdb_id}_{timestamp}.log"
     
@@ -27,7 +27,12 @@ def run_workflow(imdb_id: str, dl_dir: str, jellyfin_dir: str, logs_dir: Path):
         process.wait()
         
     status = "SUCCESS" if process.returncode == 0 else f"FAILED (code {process.returncode})"
-    print(f"[{status}] Workflow for {imdb_id} completed. Check {log_file} for details.")
+    if process.returncode != 0:
+        error_file = errors_dir / log_file.name
+        log_file.rename(error_file)
+        print(f"[{status}] Workflow for {imdb_id} failed. Check {error_file} for details.")
+    else:
+        print(f"[{status}] Workflow for {imdb_id} completed. Check {log_file} for details.")
     return imdb_id, process.returncode
 
 def main():
@@ -41,6 +46,8 @@ def main():
     
     logs_dir = Path("logs")
     logs_dir.mkdir(exist_ok=True)
+    errors_dir = Path("errors")
+    errors_dir.mkdir(exist_ok=True)
     
     print(f"Launching processing for {len(args.imdb_ids)} IMDB IDs across {args.workers} workers...")
     
@@ -48,7 +55,7 @@ def main():
         futures = []
         for imdb_id in args.imdb_ids:
             futures.append(
-                executor.submit(run_workflow, imdb_id, args.dl_dir, args.jellyfin_dir, logs_dir)
+                executor.submit(run_workflow, imdb_id, args.dl_dir, args.jellyfin_dir, logs_dir, errors_dir)
             )
             
         for future in concurrent.futures.as_completed(futures):
