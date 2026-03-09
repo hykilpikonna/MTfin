@@ -110,3 +110,33 @@ def rename_torrent_and_folder(qb_client: Client, torrent_hash: str, new_name: st
     except Exception as e:
         # Might be a single-file torrent or no root folder
         print(f"Failed to rename folder: {e}")
+
+    import time
+    print("Waiting for rename to take effect...")
+    for _ in range(15):  # wait up to 15 seconds
+        info = qb_client.torrents_info(hashes=torrent_hash)
+        if not info:
+            break
+            
+        current_name = info[0].name
+        
+        # Check files to see if root path matches
+        files = qb_client.torrents_files(torrent_hash=torrent_hash)
+        if not files:
+            time.sleep(1)
+            continue
+            
+        all_match_or_single = True
+        has_root_dir = all("/" in getattr(f, "name", "") or "\\" in getattr(f, "name", "") for f in files)
+        
+        if has_root_dir:
+            if not all(getattr(f, "name", "").startswith(f"{new_name}/") or getattr(f, "name", "").startswith(f"{new_name}\\") for f in files):
+                all_match_or_single = False
+                
+        if current_name == new_name and all_match_or_single:
+            print("Rename confirmed by qBittorrent.")
+            return
+            
+        time.sleep(1)
+        
+    print("Warning: Rename may not have fully propagated yet.")
