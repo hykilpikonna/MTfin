@@ -85,20 +85,14 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_dir: 
     for tid in selected_ids:
         print(f"\n=== [3] Downloading .torrent for ID: {tid} ===")
         torrent_bytes = generate_mteam_download_token(tid)
-        
-        # Save straight to local directory
-        torrent_path = f"{tid}.torrent"
-        with open(torrent_path, "wb") as f:
-            f.write(torrent_bytes)
-        print(f"Saved .torrent to {torrent_path}")
 
         print(f"\n=== [4] Adding torrent to qBittorrent ===")
-        download_torrent(qb, torrent_path, dl_dir)
+        download_torrent(qb, torrent_bytes, dl_dir)
 
         # Parse local hash directly instead of hoping qB orders correctly
-        t_hash = get_torrent_hash(torrent_path)
+        t_hash = get_torrent_hash(torrent_bytes)
         if not t_hash:
-            print(f"Could not compute hash for {torrent_path}, skipping!")
+            print(f"Could not compute hash for {tid}, skipping!")
             continue
 
         print(f"\n=== [5] Waiting for download to finish ===")

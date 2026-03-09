@@ -3,7 +3,7 @@ import requests
 import tomllib
 from pathlib import Path
 
-from utils import with_disk_cache
+from utils import with_disk_cache, with_binary_disk_cache
 
 config = tomllib.loads(Path("config.toml").read_text())
 
@@ -74,6 +74,7 @@ def mteam_imdb_info(id: str) -> dict:
     return response.json()
 
 
+@with_binary_disk_cache('generate_mteam_download_token', ext=".torrent")
 def generate_mteam_download_token(torrent_id: str) -> bytes:
     """
     Generate an M-Team download token for a specific torrent ID and download the torrent content.

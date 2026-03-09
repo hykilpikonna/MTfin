@@ -17,16 +17,18 @@ def get_qb_client() -> Client:
     return qb
 
 
-def download_torrent(qb_client: Client, torrent_source: str, save_path: str) -> str:
+def download_torrent(qb_client: Client, torrent_source: str | bytes, save_path: str) -> str:
     """
     4. Calls qb api to download a torrent to a messy directory.
     
     :param qb_client: Authenticated qbittorrentapi.Client
-    :param torrent_source: File path to a .torrent file, or a magnet link / URL.
+    :param torrent_source: File path to a .torrent file, a magnet link / URL, or raw bytes.
     :param save_path: The directory where the torrent should be downloaded (e.g. the messy folder).
     :return: Response from the API.
     """
-    if os.path.isfile(torrent_source):
+    if isinstance(torrent_source, bytes):
+        return qb_client.torrents_add(torrent_files={"upload.torrent": torrent_source}, save_path=save_path)
+    elif os.path.isfile(torrent_source):
         # Open and read the bytes explicitly so that qb uploads the file data,
         # negating local path security issues on the remote instance
         with open(torrent_source, "rb") as f:
@@ -64,13 +66,16 @@ def get_torrent_file_tree(qb_client: Client, torrent_hash: str) -> list:
         print(f"Error fetching file tree for {torrent_hash}: {e}")
         return []
 
-def get_torrent_hash(filepath: str) -> str:
+def get_torrent_hash(source: str | bytes) -> str:
     """
-    Parses a local .torrent file and computes its info hash directly.
+    Parses a local .torrent file or raw bytes and computes its info hash directly.
     """
     try:
-        with open(filepath, "rb") as f:
-            torrent_data = bencodepy.decode(f.read())
+        if isinstance(source, bytes):
+            torrent_data = bencodepy.decode(source)
+        else:
+            with open(source, "rb") as f:
+                torrent_data = bencodepy.decode(f.read())
             
         # Info dictionary is under b"info" 
         info_data = torrent_data[b"info"]
@@ -79,5 +84,5 @@ def get_torrent_hash(filepath: str) -> str:
         # Calculate SHA1 hash of the bencoded info dictionary
         return hashlib.sha1(info_encoded).hexdigest()
     except Exception as e:
-        print(f"Could not parse torrent hash from {filepath}: {e}")
+        print(f"Could not parse torrent hash: {e}")
         return ""
