@@ -96,6 +96,7 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
 
     if existing_t_hash:
         print(f"Found existing torrent with hash {existing_t_hash}, skipping search and download.")
+        rename_torrent_and_folder(qb, existing_t_hash, new_name)
         hashes_to_process.append((existing_t_hash, "existing"))
     else:
         print(f"\n=== [1] Searching Torrents for {imdb_id} ===")
@@ -173,6 +174,10 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
             hashes_to_process.append((t_hash, tid))
 
     for t_hash, tid in hashes_to_process:
+        tag = "Jellyfin TV" if movietype == 'TV Series' else "Jellyfin Movie"
+        print(f"\n=== [5.5] Adding '{tag}' tag to torrent ===")
+        qb.torrents_add_tags(tags=tag, torrent_hashes=t_hash)
+
         print(f"\n=== [6] Generating rename mapping using LLM ===")
         file_tree = get_torrent_file_tree(qb, t_hash)
 
