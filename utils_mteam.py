@@ -22,7 +22,14 @@ def _get_mteam_headers() -> dict:
     }
 
 
-@with_disk_cache('search_mteam_torrents')
+def is_mteam_success(res) -> bool:
+    """Predicate to check if an M-Team API response is successful."""
+    if isinstance(res, dict):
+        code = str(res.get("code", ""))
+        return code == "0" or code == "200"
+    return False
+
+@with_disk_cache('search_mteam_torrents', should_cache=is_mteam_success)
 def search_mteam_torrents(imdb_url: str, page_number: int = 1, page_size: int = 100) -> dict:
     """
     Search M-Team for torrents using IMDb URL.
@@ -51,7 +58,7 @@ def search_mteam_torrents(imdb_url: str, page_number: int = 1, page_size: int = 
     return response.json()
 
 
-@with_disk_cache('mteam_imdb_info')
+@with_disk_cache('mteam_imdb_info', should_cache=is_mteam_success)
 def mteam_imdb_info(id: str) -> dict:
     """
     Search M-Team for torrents using IMDb URL.
@@ -145,4 +152,4 @@ def format_mteam_torrent(t: dict) -> str:
 
 
 if __name__ == "__main__":
-    print(mteam_imdb_info('tt38872297'))
+    print(mteam_imdb_info('tt0371724'))
