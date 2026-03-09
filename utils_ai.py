@@ -38,10 +38,16 @@ def _call_openai_with_prompt(prompt_id: str, prompt_version: str, input_text: st
     try:
         # If response is a Pydantic model
         if hasattr(response, 'output') and response.output:
-            return response.output[0].content[0].text
+            for out_msg in response.output:
+                if getattr(out_msg, 'type', '') == 'message':
+                    return out_msg.content[0].text
+            return response.output[-1].content[0].text
         # If response is a dictionary
         elif isinstance(response, dict) and "output" in response:
-            return response["output"][0]["content"][0]["text"]
+            for out_msg in response["output"]:
+                if out_msg.get("type") == "message":
+                    return out_msg["content"][0]["text"]
+            return response["output"][-1]["content"][0]["text"]
         # Fallback for choices (if API changes slightly)
         elif hasattr(response, 'choices') and response.choices:
             return response.choices[0].message.content
