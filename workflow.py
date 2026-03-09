@@ -13,7 +13,8 @@ from utils_qb import (
     download_torrent,
     get_torrent_file_tree,
     get_torrent_hash,
-    rename_torrent_and_folder
+    rename_torrent_and_folder,
+    remove_tag_if_exists
 )
 
 from utils_ai import (
@@ -186,11 +187,14 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
                 is_tv = True
 
         tag = "Jellyfin TV" if is_tv else "Jellyfin Movie"
+        opposite_tag = "Jellyfin Movie" if is_tv else "Jellyfin TV"
+        
         jellyfin_dir = f"{jellyfin_base_dir}/TV" if is_tv else f"{jellyfin_base_dir}/Movie"
         jellyfin_base = Path(jellyfin_dir) / f"{title_dir} [{imdb_id}]"
 
         print(f"\n=== [6.5] Adding '{tag}' tag to torrent ===")
         qb.torrents_add_tags(tags=tag, torrent_hashes=t_hash)
+        remove_tag_if_exists(qb, t_hash, opposite_tag)
 
         print(f"\n=== [7] Creating symbolic links ===")
         apply_rename_mapping(mapping, base_src_dir=src_dir_for_mapping, base_dst_dir=jellyfin_base)

@@ -140,3 +140,19 @@ def rename_torrent_and_folder(qb_client: Client, torrent_hash: str, new_name: st
         time.sleep(1)
         
     print("Warning: Rename may not have fully propagated yet.")
+
+def remove_tag_if_exists(qb_client: Client, torrent_hash: str, tag_to_remove: str) -> None:
+    """
+    Checks if a tag exists on a torrent, and removes it if it does.
+    """
+    info = qb_client.torrents_info(hashes=torrent_hash)
+    if not info:
+        return
+        
+    t_info = info[0]
+    tags = getattr(t_info, "tags", "")
+    if tags:
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        if tag_to_remove in tag_list:
+            print(f"Removing existing tag '{tag_to_remove}' from torrent.")
+            qb_client.torrents_remove_tags(tags=tag_to_remove, torrent_hashes=torrent_hash)
