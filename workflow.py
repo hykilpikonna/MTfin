@@ -179,7 +179,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Workflow to automatically find, download, and map torrents for an IMDb ID into Jellyfin.")
     parser.add_argument("imdb_id", type=str, help="The IMDb ID to process (e.g., tt38872297)")
-    parser.add_argument("--dl-dir", type=str, default="/data/qb", help="The qBittorrent download directory")
+    parser.add_argument("--dl-dir", type=str, default="/data/QB", help="The qBittorrent download directory")
     parser.add_argument("--jellyfin-dir", type=str, default="/data/Jellyfin", help="The base Jellyfin library directory")
     
     args = parser.parse_args()
