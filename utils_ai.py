@@ -67,7 +67,7 @@ def select_best_torrents(torrents_text: str) -> str:
     """
     return _call_openai_with_prompt(
         prompt_id="pmpt_69ae323e0cf4819082be215f3439bed50122fe479d6e0f2f",
-        prompt_version="3",
+        prompt_version="4",
         input_text=torrents_text
     )
 
