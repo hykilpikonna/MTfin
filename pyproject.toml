@@ -5,6 +5,7 @@ description = "Something to track your torrent trackers"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "openai>=2.26.0",
     "playwright",
     "pyotp",
     "qbittorrent-api>=2025.11.1",
