@@ -31,6 +31,34 @@ def format_file_tree(file_tree: list) -> str:
     return "\n".join(lines)
 
 
+def prepare_file_tree_paths(file_tree: list, new_name: str, dl_dir: str) -> Path:
+    """
+    Strips the root directory from paths if they all start with it,
+    and returns the base source directory to use for renaming mapping.
+    Assumes POSIX separators (no Windows compatibility needed).
+    """
+    has_root_dir = False
+    if file_tree:
+        has_root_dir = all(
+            f.get("name", "").startswith(f"{new_name}/")
+            for f in file_tree
+        )
+        
+    if has_root_dir:
+        for f in file_tree:
+            name = f.get("name", "")
+            if name.startswith(f"{new_name}/"):
+                f["name"] = "./" + name[len(f"{new_name}/"):]
+        return Path(dl_dir) / new_name
+    else:
+        for f in file_tree:
+            name = f.get("name", "")
+            if not name.startswith("./"):
+                f["name"] = "./" + name
+        return Path(dl_dir)
+
+
+
 def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_dir: str = "/data/Jellyfin"):
     """
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
@@ -130,6 +158,9 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
 
         print(f"\n=== [6] Generating rename mapping using LLM ===")
         file_tree = get_torrent_file_tree(qb, t_hash)
+
+        src_dir_for_mapping = prepare_file_tree_paths(file_tree, new_name, dl_dir)
+
         file_tree_str = format_file_tree(file_tree)
         
         prompt_text = f"Base directory: `{title_dir}`\n\n{file_tree_str}"
@@ -140,7 +171,7 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
             print(f"  {src} -->> {dst}")
 
         print(f"\n=== [7] Creating symbolic links ===")
-        apply_rename_mapping(mapping, base_src_dir=dl_dir, base_dst_dir=jellyfin_base)
+        apply_rename_mapping(mapping, base_src_dir=src_dir_for_mapping, base_dst_dir=jellyfin_base)
         print(f"Finished processing torrent: {tid}")
 
 if __name__ == "__main__":
