@@ -86,3 +86,27 @@ def get_torrent_hash(source: str | bytes) -> str:
     except Exception as e:
         print(f"Could not parse torrent hash: {e}")
         return ""
+
+def rename_torrent_and_folder(qb_client: Client, torrent_hash: str, new_name: str) -> None:
+    """
+    Renames the torrent display name and the top-level folder on disk to the given `new_name`.
+    """
+    info = qb_client.torrents_info(hashes=torrent_hash)
+    if not info:
+        print(f"Torrent {torrent_hash} not found to rename.")
+        return
+        
+    t_info = info[0]
+    old_name = t_info.name
+    
+    print(f"Renaming torrent and top-level dir from '{old_name}' to '{new_name}'")
+    try:
+        qb_client.torrents_rename(torrent_hash=torrent_hash, new_torrent_name=new_name)
+    except Exception as e:
+        print(f"Failed to rename torrent: {e}")
+        
+    try:
+        qb_client.torrents_rename_folder(torrent_hash=torrent_hash, old_path=old_name, new_path=new_name)
+    except Exception as e:
+        # Might be a single-file torrent or no root folder
+        print(f"Failed to rename folder: {e}")

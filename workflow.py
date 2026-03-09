@@ -12,7 +12,8 @@ from utils_qb import (
     get_qb_client,
     download_torrent,
     get_torrent_file_tree,
-    get_torrent_hash
+    get_torrent_hash,
+    rename_torrent_and_folder
 )
 
 from utils_ai import (
@@ -106,6 +107,9 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_base_
         time.sleep(3)
         
         print(f"Tracking torrent Hash: {t_hash}")
+
+        new_name = f"{year} {title}".strip()
+        rename_torrent_and_folder(qb, t_hash, new_name)
 
         while True:
             info = qb.torrents_info(hashes=t_hash)
