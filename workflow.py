@@ -67,8 +67,7 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
     print(f"=== [0] Fetching IMDB info for {imdb_id} ===")
     imdb_info = mteam_imdb_info(imdb_id)
     if 'data' not in imdb_info:
-        print("Failed to get IMDB info")
-        return
+        raise ValueError(f"Failed to get IMDB info from M-Team: {imdb_info}")
     
     title = imdb_info['data'].get('title', 'Unknown_Title')
     year = imdb_info['data'].get('year', '')
@@ -108,8 +107,7 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
             torrents = []
 
         if not torrents:
-            print("No torrents found.")
-            return
+            raise ValueError(f"No torrents found on M-Team for IMDb ID: {imdb_id}")
 
         # Format the torrents text
         formatted_torrents = []
@@ -124,8 +122,7 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
         print(f"Selected torrent IDs: {selected_ids}")
 
         if not selected_ids:
-            print("No torrents selected.")
-            return
+            raise ValueError(f"LLM did not select any torrents for IMDb ID: {imdb_id}")
 
         for tid in selected_ids:
             print(f"\n=== [3] Downloading .torrent for ID: {tid} ===")
