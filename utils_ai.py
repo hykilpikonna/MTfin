@@ -1,61 +1,11 @@
 import os
+import json
 from pathlib import Path
 from openai import OpenAI
 
 from utils import with_disk_cache
 
 client = OpenAI()
-
-def _call_openai_with_prompt(prompt_id: str, prompt_version: str, input_text: str) -> str:
-    """Helper method to execute a prompt."""
-    response = client.responses.create(
-        prompt={
-            "id": prompt_id,
-            "version": prompt_version
-        },
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": input_text
-                    }
-                ]
-            }
-        ],
-        reasoning={
-            "summary": "auto"
-        },
-        store=True,
-        include=[
-            "reasoning.encrypted_content",
-            "web_search_call.action.sources"
-        ]
-    )
-    
-    # Try to extract the text response based on the new API format
-    try:
-        # If response is a Pydantic model
-        if hasattr(response, 'output') and response.output:
-            for out_msg in response.output:
-                if getattr(out_msg, 'type', '') == 'message':
-                    return out_msg.content[0].text
-            return response.output[-1].content[0].text
-        # If response is a dictionary
-        elif isinstance(response, dict) and "output" in response:
-            for out_msg in response["output"]:
-                if out_msg.get("type") == "message":
-                    return out_msg["content"][0]["text"]
-            return response["output"][-1]["content"][0]["text"]
-        # Fallback for choices (if API changes slightly)
-        elif hasattr(response, 'choices') and response.choices:
-            return response.choices[0].message.content
-        return str(response)
-    except Exception as e:
-        print(f"Error parsing response: {e}")
-        return str(response)
-
 
 @with_disk_cache('select_best_torrents')
 def select_best_torrents(torrents_text: str) -> str:
@@ -65,11 +15,24 @@ def select_best_torrents(torrents_text: str) -> str:
     :param torrents_text: A string containing formatted torrent information.
     :return: A string containing the selected torrent IDs, separated by space.
     """
-    return _call_openai_with_prompt(
-        prompt_id="pmpt_69ae323e0cf4819082be215f3439bed50122fe479d6e0f2f",
-        prompt_version="4",
-        input_text=torrents_text
+    prompt_path = Path(__file__).parent / "prompt_select_torrents.json"
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        messages = json.load(f)
+        
+    messages.append({
+        "role": "user",
+        "content": torrents_text
+    })
+
+    response = client.chat.completions.create(
+        model="gpt-5.4",
+        messages=messages,
+        response_format={"type": "text"},
+        verbosity="medium",
+        reasoning_effort="medium",
+        store=True
     )
+    return response.choices[0].message.content
 
 
 @with_disk_cache('generate_rename_mapping')
@@ -81,11 +44,23 @@ def generate_rename_mapping(directory_text: str) -> dict[str, str]:
     :param directory_text: A string containing the base directory and list of files.
     :return: A dictionary mapping source paths to destination paths.
     """
-    raw_response = _call_openai_with_prompt(
-        prompt_id="pmpt_69ae4175ba248195acf5b828bcc3360707d31714c556743d",
-        prompt_version="6",
-        input_text=directory_text
+    prompt_path = Path(__file__).parent / "prompt_generate_mapping.json"
+    with open(prompt_path, "r", encoding="utf-8") as f:
+        messages = json.load(f)
+        
+    messages.append({
+        "role": "user",
+        "content": directory_text
+    })
+    
+    response = client.chat.completions.create(
+        model="gpt-5.1-codex-mini",
+        messages=messages,
+        response_format={"type": "text"},
+        reasoning_effort="low",
+        store=True
     )
+    raw_response = response.choices[0].message.content
     
     mapping = {}
     for line in raw_response.splitlines():
