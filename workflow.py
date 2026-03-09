@@ -31,7 +31,7 @@ def format_file_tree(file_tree: list) -> str:
     return "\n".join(lines)
 
 
-def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_base_dir: str = "/data/Jellyfin"):
+def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_dir: str = "/data/Jellyfin"):
     """
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
     """
