@@ -3,11 +3,11 @@ import time
 from pathlib import Path
 
 from utils_mteam import (
-    mteam_imdb_info,
     search_mteam_torrents,
     format_mteam_torrent,
     generate_mteam_download_token,
 )
+from utils_imdb import get_imdb_info
 from utils_qb import (
     get_qb_client,
     download_torrent,
@@ -87,12 +87,12 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
     """
     print(f"=== [0] Fetching IMDB info for {imdb_id} ===")
-    imdb_info = mteam_imdb_info(imdb_id)
-    if 'data' not in imdb_info:
-        raise ValueError(f"Failed to get IMDB info from M-Team: {imdb_info}")
+    imdb_info = get_imdb_info(imdb_id)
+    if 'data' not in imdb_info or not imdb_info['data']:
+        raise ValueError(f"Failed to get IMDB info from imdbapi: {imdb_info}")
     
-    title = imdb_info['data'].get('title', 'Unknown_Title')
-    year = imdb_info['data'].get('year', '')
+    title = imdb_info['data'].get('primaryTitle', 'Unknown_Title')
+    year = imdb_info['data'].get('startYear', '')
     title_dir = f"{title} ({year})"
     print(f"Found Title: {title_dir}")
 
