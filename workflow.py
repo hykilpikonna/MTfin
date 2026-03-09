@@ -74,15 +74,8 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
     title_dir = f"{title} ({year})"
     print(f"Found Title: {title_dir}")
 
-    movietype = imdb_info['data'].get('movietype', 'Movie')
-    if movietype == 'TV Series':
-        jellyfin_dir = f"{jellyfin_base_dir}/TV"
-    else:
-        jellyfin_dir = f"{jellyfin_base_dir}/Movie"
-
     print(f"\n=== [0.5] Checking if torrent already exists in qBittorrent ===")
     qb = get_qb_client()
-    jellyfin_base = Path(jellyfin_dir) / f"{title_dir} [{imdb_id}]"
     new_name = f"{year} {title} [{imdb_id}]".strip()
 
     existing_torrents = qb.torrents_info()
@@ -174,10 +167,6 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
             hashes_to_process.append((t_hash, tid))
 
     for t_hash, tid in hashes_to_process:
-        tag = "Jellyfin TV" if movietype == 'TV Series' else "Jellyfin Movie"
-        print(f"\n=== [5.5] Adding '{tag}' tag to torrent ===")
-        qb.torrents_add_tags(tags=tag, torrent_hashes=t_hash)
-
         print(f"\n=== [6] Generating rename mapping using LLM ===")
         file_tree = get_torrent_file_tree(qb, t_hash)
 
@@ -189,8 +178,19 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
         print(f"Sending paths to LLM...")
         mapping = generate_rename_mapping(prompt_text)
         print("Generated Mapping:")
+        
+        is_tv = False
         for src, dst in mapping.items():
             print(f"  {src} -->> {dst}")
+            if "Season " in dst or "Series " in dst:
+                is_tv = True
+
+        tag = "Jellyfin TV" if is_tv else "Jellyfin Movie"
+        jellyfin_dir = f"{jellyfin_base_dir}/TV" if is_tv else f"{jellyfin_base_dir}/Movie"
+        jellyfin_base = Path(jellyfin_dir) / f"{title_dir} [{imdb_id}]"
+
+        print(f"\n=== [6.5] Adding '{tag}' tag to torrent ===")
+        qb.torrents_add_tags(tags=tag, torrent_hashes=t_hash)
 
         print(f"\n=== [7] Creating symbolic links ===")
         apply_rename_mapping(mapping, base_src_dir=src_dir_for_mapping, base_dst_dir=jellyfin_base)
