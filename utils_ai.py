@@ -83,7 +83,7 @@ def generate_rename_mapping(directory_text: str) -> dict[str, str]:
     """
     raw_response = _call_openai_with_prompt(
         prompt_id="pmpt_69ae4175ba248195acf5b828bcc3360707d31714c556743d",
-        prompt_version="4",
+        prompt_version="5",
         input_text=directory_text
     )
     
