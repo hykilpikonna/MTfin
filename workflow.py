@@ -60,6 +60,28 @@ def prepare_file_tree_paths(file_tree: list, new_name: str, dl_dir: str) -> Path
 
 
 
+def wait_for_download(qb, t_hash: str):
+    """
+    Blocks until the torrent with the given hash is finished downloading.
+    """
+    while True:
+        info = qb.torrents_info(hashes=t_hash)
+        if not info:
+            print("Torrent disappeared from qB!")
+            break
+            
+        t_info = info[0]
+        progress = t_info.progress
+        state = t_info.state
+        print(f"Progress: {progress * 100:.1f}% (State: {state})")
+        
+        # Progress of 1.0 means 100%. Alternatively, check the state.
+        if progress >= 1.0 or state in ('uploading', 'pausedUP', 'stalledUP', 'forcedUP'):
+            break
+        time.sleep(5)
+    print("Download complete!")
+
+
 def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_dir: str = "/data/Jellyfin"):
     """
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
@@ -90,6 +112,10 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
     if existing_t_hash:
         print(f"Found existing torrent with hash {existing_t_hash}, skipping search and download.")
         rename_torrent_and_folder(qb, existing_t_hash, new_name)
+        
+        print(f"\n=== [0.6] Waiting for existing download to finish ===")
+        wait_for_download(qb, existing_t_hash)
+        
         hashes_to_process.append((existing_t_hash, "existing"))
     else:
         print(f"\n=== [1] Searching Torrents for {imdb_id} ===")
@@ -144,23 +170,7 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
             print(f"Tracking torrent Hash: {t_hash}")
 
             rename_torrent_and_folder(qb, t_hash, new_name)
-
-            while True:
-                info = qb.torrents_info(hashes=t_hash)
-                if not info:
-                    print("Torrent disappeared from qB!")
-                    break
-                    
-                t_info = info[0]
-                progress = t_info.progress
-                state = t_info.state
-                print(f"Progress: {progress * 100:.1f}% (State: {state})")
-                
-                # Progress of 1.0 means 100%. Alternatively, check the state.
-                if progress >= 1.0 or state in ('uploading', 'pausedUP', 'stalledUP', 'forcedUP'):
-                    break
-                time.sleep(5)
-            print("Download complete!")
+            wait_for_download(qb, t_hash)
             
             hashes_to_process.append((t_hash, tid))
 
