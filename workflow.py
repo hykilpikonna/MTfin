@@ -80,82 +80,99 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_
     else:
         jellyfin_dir = f"{jellyfin_base_dir}/Movie"
 
-    print(f"\n=== [1] Searching Torrents for {imdb_id} ===")
-    imdb_url = f"https://www.imdb.com/title/{imdb_id}/"
-    search_res = search_mteam_torrents(imdb_url)
-
-    # Extract the torrent list
-    if "data" in search_res and isinstance(search_res["data"], dict) and "data" in search_res["data"]:
-        torrents = search_res["data"]["data"]
-    elif "data" in search_res and isinstance(search_res["data"], list):
-        torrents = search_res["data"]
-    elif isinstance(search_res, list):
-        torrents = search_res
-    else:
-        torrents = []
-
-    if not torrents:
-        print("No torrents found.")
-        return
-
-    # Format the torrents text
-    formatted_torrents = []
-    for t in torrents:
-        if isinstance(t, dict):
-            formatted_torrents.append(format_mteam_torrent(t))
-    torrents_text = "\n\n".join(formatted_torrents)
-
-    print(f"\n=== [2] Selecting best torrents using LLM ===")
-    selected_ids_str = select_best_torrents(torrents_text)
-    selected_ids = [tid.strip() for tid in selected_ids_str.split() if tid.strip()]
-    print(f"Selected torrent IDs: {selected_ids}")
-
-    if not selected_ids:
-        print("No torrents selected.")
-        return
-
+    print(f"\n=== [0.5] Checking if torrent already exists in qBittorrent ===")
     qb = get_qb_client()
     jellyfin_base = Path(jellyfin_dir) / f"{title_dir} [{imdb_id}]"
+    new_name = f"{year} {title} [{imdb_id}]".strip()
 
-    for tid in selected_ids:
-        print(f"\n=== [3] Downloading .torrent for ID: {tid} ===")
-        torrent_bytes = generate_mteam_download_token(tid)
+    existing_torrents = qb.torrents_info()
+    existing_t_hash = None
+    for t in existing_torrents:
+        if f"[{imdb_id}]" in t.name:
+            existing_t_hash = t.hash
+            break
 
-        print(f"\n=== [4] Adding torrent to qBittorrent ===")
-        download_torrent(qb, torrent_bytes, dl_dir)
+    hashes_to_process = []
 
-        # Parse local hash directly instead of hoping qB orders correctly
-        t_hash = get_torrent_hash(torrent_bytes)
-        if not t_hash:
-            print(f"Could not compute hash for {tid}, skipping!")
-            continue
+    if existing_t_hash:
+        print(f"Found existing torrent with hash {existing_t_hash}, skipping search and download.")
+        hashes_to_process.append((existing_t_hash, "existing"))
+    else:
+        print(f"\n=== [1] Searching Torrents for {imdb_id} ===")
+        imdb_url = f"https://www.imdb.com/title/{imdb_id}/"
+        search_res = search_mteam_torrents(imdb_url)
 
-        print(f"\n=== [5] Waiting for download to finish ===")
-        # Wait slightly for qB to process the adding request
-        time.sleep(3)
-        
-        print(f"Tracking torrent Hash: {t_hash}")
+        # Extract the torrent list
+        if "data" in search_res and isinstance(search_res["data"], dict) and "data" in search_res["data"]:
+            torrents = search_res["data"]["data"]
+        elif "data" in search_res and isinstance(search_res["data"], list):
+            torrents = search_res["data"]
+        elif isinstance(search_res, list):
+            torrents = search_res
+        else:
+            torrents = []
 
-        new_name = f"{year} {title}".strip()
-        rename_torrent_and_folder(qb, t_hash, new_name)
+        if not torrents:
+            print("No torrents found.")
+            return
 
-        while True:
-            info = qb.torrents_info(hashes=t_hash)
-            if not info:
-                print("Torrent disappeared from qB!")
-                break
-                
-            t_info = info[0]
-            progress = t_info.progress
-            state = t_info.state
-            print(f"Progress: {progress * 100:.1f}% (State: {state})")
+        # Format the torrents text
+        formatted_torrents = []
+        for t in torrents:
+            if isinstance(t, dict):
+                formatted_torrents.append(format_mteam_torrent(t))
+        torrents_text = "\n\n".join(formatted_torrents)
+
+        print(f"\n=== [2] Selecting best torrents using LLM ===")
+        selected_ids_str = select_best_torrents(torrents_text)
+        selected_ids = [tid.strip() for tid in selected_ids_str.split() if tid.strip()]
+        print(f"Selected torrent IDs: {selected_ids}")
+
+        if not selected_ids:
+            print("No torrents selected.")
+            return
+
+        for tid in selected_ids:
+            print(f"\n=== [3] Downloading .torrent for ID: {tid} ===")
+            torrent_bytes = generate_mteam_download_token(tid)
+
+            print(f"\n=== [4] Adding torrent to qBittorrent ===")
+            download_torrent(qb, torrent_bytes, dl_dir)
+
+            # Parse local hash directly instead of hoping qB orders correctly
+            t_hash = get_torrent_hash(torrent_bytes)
+            if not t_hash:
+                print(f"Could not compute hash for {tid}, skipping!")
+                continue
+
+            print(f"\n=== [5] Waiting for download to finish ===")
+            # Wait slightly for qB to process the adding request
+            time.sleep(3)
             
-            # Progress of 1.0 means 100%. Alternatively, check the state.
-            if progress >= 1.0 or state in ('uploading', 'pausedUP', 'stalledUP', 'forcedUP'):
-                break
-            time.sleep(5)
-        print("Download complete!")
+            print(f"Tracking torrent Hash: {t_hash}")
 
+            rename_torrent_and_folder(qb, t_hash, new_name)
+
+            while True:
+                info = qb.torrents_info(hashes=t_hash)
+                if not info:
+                    print("Torrent disappeared from qB!")
+                    break
+                    
+                t_info = info[0]
+                progress = t_info.progress
+                state = t_info.state
+                print(f"Progress: {progress * 100:.1f}% (State: {state})")
+                
+                # Progress of 1.0 means 100%. Alternatively, check the state.
+                if progress >= 1.0 or state in ('uploading', 'pausedUP', 'stalledUP', 'forcedUP'):
+                    break
+                time.sleep(5)
+            print("Download complete!")
+            
+            hashes_to_process.append((t_hash, tid))
+
+    for t_hash, tid in hashes_to_process:
         print(f"\n=== [6] Generating rename mapping using LLM ===")
         file_tree = get_torrent_file_tree(qb, t_hash)
 
