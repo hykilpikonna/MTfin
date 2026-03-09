@@ -4,6 +4,7 @@ import concurrent.futures
 import os
 from pathlib import Path
 from datetime import datetime
+import time
 
 def run_workflow(imdb_id: str, dl_dir: str, jellyfin_dir: str, logs_dir: Path, errors_dir: Path):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -41,6 +42,7 @@ def main():
     parser.add_argument("--dl-dir", type=str, default="/data/QB", help="The qBittorrent download directory")
     parser.add_argument("--jellyfin-dir", type=str, default="/data/Jellyfin", help="The base Jellyfin library directory")
     parser.add_argument("--workers", type=int, default=4, help="Number of concurrent workers")
+    parser.add_argument("--delay", type=float, default=5.0, help="Delay in seconds between starting each workflow")
     
     args = parser.parse_args()
     
@@ -53,7 +55,9 @@ def main():
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = []
-        for imdb_id in args.imdb_ids:
+        for i, imdb_id in enumerate(args.imdb_ids):
+            if i > 0:
+                time.sleep(args.delay)
             futures.append(
                 executor.submit(run_workflow, imdb_id, args.dl_dir, args.jellyfin_dir, logs_dir, errors_dir)
             )
