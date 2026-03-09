@@ -30,7 +30,7 @@ def format_file_tree(file_tree: list) -> str:
     return "\n".join(lines)
 
 
-def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_dir: str = "/data/jellyfin"):
+def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_base_dir: str = "/data/Jellyfin"):
     """
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
     """
@@ -44,6 +44,12 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_dir: 
     year = imdb_info['data'].get('year', '')
     title_dir = f"{title} ({year})"
     print(f"Found Title: {title_dir}")
+
+    movietype = imdb_info['data'].get('movietype', 'Movie')
+    if movietype == 'TV Series':
+        jellyfin_dir = f"{jellyfin_base_dir}/TV"
+    else:
+        jellyfin_dir = f"{jellyfin_base_dir}/Movie"
 
     print(f"\n=== [1] Searching Torrents for {imdb_id} ===")
     imdb_url = f"https://www.imdb.com/title/{imdb_id}/"
@@ -134,8 +140,13 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_dir: 
         print(f"Finished processing torrent: {tid}")
 
 if __name__ == "__main__":
-    import sys
+    import argparse
     
-    # Allow executing directly with `uv run workflow.py tt7742120`
-    test_id = sys.argv[1] if len(sys.argv) > 1 else "tt38872297"
-    process_imdb_workflow(test_id)
+    parser = argparse.ArgumentParser(description="Workflow to automatically find, download, and map torrents for an IMDb ID into Jellyfin.")
+    parser.add_argument("imdb_id", type=str, help="The IMDb ID to process (e.g., tt38872297)")
+    parser.add_argument("--dl-dir", type=str, default="/data/qb", help="The qBittorrent download directory")
+    parser.add_argument("--jellyfin-dir", type=str, default="/data/Jellyfin", help="The base Jellyfin library directory")
+    
+    args = parser.parse_args()
+    
+    process_imdb_workflow(args.imdb_id, dl_dir=args.dl_dir, jellyfin_base_dir=args.jellyfin_dir)
