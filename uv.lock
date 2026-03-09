@@ -25,6 +25,12 @@ wheels = [
 ]
 
 [[package]]
+name = "bencodepy"
+version = "0.9.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/72/e2ee9f8a93c92af1ba2d7ef903fd653ef397564ef7715c6ab3eb462f6e29/bencodepy-0.9.5.zip", hash = "sha256:af472134d73ea58edab3c2cb2f2cf61eb9d783908284c3d2d5b1cfd38df864b8", size = 3598, upload-time = "2015-10-16T21:30:09.066Z" }
+
+[[package]]
 name = "certifi"
 version = "2025.11.12"
 source = { registry = "https://pypi.org/simple" }
@@ -470,6 +476,7 @@ name = "trackertracker"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "bencodepy" },
     { name = "openai" },
     { name = "playwright" },
     { name = "pyotp" },
@@ -478,6 +485,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bencodepy", specifier = ">=0.9.5" },
     { name = "openai", specifier = ">=2.26.0" },
     { name = "playwright" },
     { name = "pyotp" },

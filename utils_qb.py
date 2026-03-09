@@ -1,4 +1,6 @@
 import os
+import hashlib
+import bencodepy
 from qbittorrentapi import Client
 import tomllib
 from pathlib import Path
@@ -25,8 +27,12 @@ def download_torrent(qb_client: Client, torrent_source: str, save_path: str) -> 
     :return: Response from the API.
     """
     if os.path.isfile(torrent_source):
-        # It's a local .torrent file
-        return qb_client.torrents_add(torrent_files=torrent_source, save_path=save_path)
+        # Open and read the bytes explicitly so that qb uploads the file data,
+        # negating local path security issues on the remote instance
+        with open(torrent_source, "rb") as f:
+            torrent_filename = os.path.basename(torrent_source)
+            # Pass dictionary mappings to `torrent_files` to upload binary streams directly
+            return qb_client.torrents_add(torrent_files={torrent_filename: f.read()}, save_path=save_path)
     else:
         # It's a magnet link or URL
         return qb_client.torrents_add(urls=torrent_source, save_path=save_path)
@@ -57,3 +63,21 @@ def get_torrent_file_tree(qb_client: Client, torrent_hash: str) -> list:
     except Exception as e:
         print(f"Error fetching file tree for {torrent_hash}: {e}")
         return []
+
+def get_torrent_hash(filepath: str) -> str:
+    """
+    Parses a local .torrent file and computes its info hash directly.
+    """
+    try:
+        with open(filepath, "rb") as f:
+            torrent_data = bencodepy.decode(f.read())
+            
+        # Info dictionary is under b"info" 
+        info_data = torrent_data[b"info"]
+        info_encoded = bencodepy.encode(info_data)
+        
+        # Calculate SHA1 hash of the bencoded info dictionary
+        return hashlib.sha1(info_encoded).hexdigest()
+    except Exception as e:
+        print(f"Could not parse torrent hash from {filepath}: {e}")
+        return ""

@@ -33,6 +33,11 @@ def with_disk_cache(subdir_name: str):
             
             cache_p.parent.mkdir(parents=True, exist_ok=True)
             cache_p.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            
+            # Write arguments to a .txt file for easy lookup
+            txt_p = cache_p.with_suffix('.txt')
+            txt_p.write_text(f"Args: {args}\nKwargs: {kwargs}", encoding="utf-8")
+            
             return result
         return wrapper
     return decorator

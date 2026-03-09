@@ -11,7 +11,8 @@ from utils_mteam import (
 from utils_qb import (
     get_qb_client,
     download_torrent,
-    get_torrent_file_tree
+    get_torrent_file_tree,
+    get_torrent_hash
 )
 
 from utils_ai import (
@@ -94,21 +95,17 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_dir: 
         print(f"\n=== [4] Adding torrent to qBittorrent ===")
         download_torrent(qb, torrent_path, dl_dir)
 
+        # Parse local hash directly instead of hoping qB orders correctly
+        t_hash = get_torrent_hash(torrent_path)
+        if not t_hash:
+            print(f"Could not compute hash for {torrent_path}, skipping!")
+            continue
+
         print(f"\n=== [5] Waiting for download to finish ===")
         # Wait slightly for qB to process the adding request
         time.sleep(3)
         
-        # Best effort to grab the hash of the torrent we just added 
-        # (Assuming it's the most recently added sorted descending)
-        recent_torrents = qb.torrents_info(sort="added_on", reverse=True)
-        if not recent_torrents:
-            print("Could not find any torrents in qB!")
-            continue
-            
-        target_torrent = recent_torrents[0]
-        t_hash = target_torrent.hash
-        t_name = target_torrent.name
-        print(f"Tracking torrent: {t_name} (Hash: {t_hash})")
+        print(f"Tracking torrent Hash: {t_hash}")
 
         while True:
             info = qb.torrents_info(hashes=t_hash)
