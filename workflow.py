@@ -47,12 +47,6 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_dir: 
     print(f"\n=== [1] Searching Torrents for {imdb_id} ===")
     imdb_url = f"https://www.imdb.com/title/{imdb_id}/"
     search_res = search_mteam_torrents(imdb_url)
-    
-    # Save the raw JSON
-    json_path = f"{imdb_id}.json"
-    print(f"Saving search results to {json_path}...")
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(search_res, f, ensure_ascii=False, indent=2)
 
     # Extract the torrent list
     if "data" in search_res and isinstance(search_res["data"], dict) and "data" in search_res["data"]:
@@ -90,6 +84,8 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/qb", jellyfin_dir: 
     for tid in selected_ids:
         print(f"\n=== [3] Downloading .torrent for ID: {tid} ===")
         torrent_bytes = generate_mteam_download_token(tid)
+        
+        # Save straight to local directory
         torrent_path = f"{tid}.torrent"
         with open(torrent_path, "wb") as f:
             f.write(torrent_bytes)

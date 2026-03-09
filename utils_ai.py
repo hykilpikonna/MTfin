@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from openai import OpenAI
 
+from utils import with_disk_cache
+
 client = OpenAI()
 
 def _call_openai_with_prompt(prompt_id: str, prompt_version: str, input_text: str) -> str:
@@ -49,6 +51,7 @@ def _call_openai_with_prompt(prompt_id: str, prompt_version: str, input_text: st
         return str(response)
 
 
+@with_disk_cache('select_best_torrents')
 def select_best_torrents(torrents_text: str) -> str:
     """
     Calls the OpenAI API to select the best torrent IDs using a predefined prompt.
@@ -63,6 +66,7 @@ def select_best_torrents(torrents_text: str) -> str:
     )
 
 
+@with_disk_cache('generate_rename_mapping')
 def generate_rename_mapping(directory_text: str) -> dict[str, str]:
     """
     Calls the OpenAI API to generate a renaming mapping for files 

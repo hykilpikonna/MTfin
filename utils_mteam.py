@@ -1,6 +1,9 @@
+import json
 import requests
 import tomllib
 from pathlib import Path
+
+from utils import with_disk_cache
 
 config = tomllib.loads(Path("config.toml").read_text())
 
@@ -19,6 +22,7 @@ def _get_mteam_headers() -> dict:
     }
 
 
+@with_disk_cache('search_mteam_torrents')
 def search_mteam_torrents(imdb_url: str, page_number: int = 1, page_size: int = 100) -> dict:
     """
     Search M-Team for torrents using IMDb URL.
@@ -47,6 +51,7 @@ def search_mteam_torrents(imdb_url: str, page_number: int = 1, page_size: int = 
     return response.json()
 
 
+@with_disk_cache('mteam_imdb_info')
 def mteam_imdb_info(id: str) -> dict:
     """
     Search M-Team for torrents using IMDb URL.
