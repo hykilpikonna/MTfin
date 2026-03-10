@@ -37,7 +37,9 @@ def select_best_torrents(torrents_text: str) -> str:
         store=True,
         include=["reasoning.encrypted_content", "web_search_call.action.sources"]
     )
-    return response.choices[0].message.content
+    assert (output := response.output[-1]).type == "output_text"
+    assert len(contents := output.content) == 1
+    return contents[0].text
 
 
 @with_disk_cache('generate_rename_mapping')
@@ -71,7 +73,9 @@ def generate_rename_mapping(directory_text: str) -> dict[str, str]:
         store=True,
         include=["reasoning.encrypted_content", "web_search_call.action.sources"]
     )
-    raw_response = response.choices[0].message.content
+    assert (output := response.output[-1]).type == "output_text"
+    assert len(contents := output.content) == 1
+    raw_response = contents[0].text
     
     mapping = {}
     for line in raw_response.splitlines():
