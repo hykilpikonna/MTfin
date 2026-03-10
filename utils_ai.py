@@ -17,20 +17,25 @@ def select_best_torrents(torrents_text: str) -> str:
     """
     prompt_path = Path(__file__).parent / "prompt_select_torrents.json"
     with open(prompt_path, "r", encoding="utf-8") as f:
-        messages = json.load(f)
+        inputs = json.load(f)
         
-    messages.append({
+    inputs.append({
         "role": "user",
-        "content": torrents_text
+        "content": [
+            {
+                "type": "input_text",
+                "text": torrents_text
+            }
+        ]
     })
 
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model="gpt-5.4",
-        messages=messages,
-        response_format={"type": "text"},
-        verbosity="medium",
-        reasoning_effort="medium",
-        store=True
+        input=inputs,
+        text={"format": {"type": "text"}, "verbosity": "medium"},
+        reasoning={"effort": "medium", "summary": "auto"},
+        store=True,
+        include=["reasoning.encrypted_content", "web_search_call.action.sources"]
     )
     return response.choices[0].message.content
 
@@ -46,19 +51,25 @@ def generate_rename_mapping(directory_text: str) -> dict[str, str]:
     """
     prompt_path = Path(__file__).parent / "prompt_generate_mapping.json"
     with open(prompt_path, "r", encoding="utf-8") as f:
-        messages = json.load(f)
+        inputs = json.load(f)
         
-    messages.append({
+    inputs.append({
         "role": "user",
-        "content": directory_text
+        "content": [
+            {
+                "type": "input_text",
+                "text": directory_text
+            }
+        ]
     })
     
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model="gpt-5.1-codex-mini",
-        messages=messages,
-        response_format={"type": "text"},
-        reasoning_effort="low",
-        store=True
+        input=inputs,
+        text={"format": {"type": "text"}},
+        reasoning={"effort": "low"},
+        store=True,
+        include=["reasoning.encrypted_content", "web_search_call.action.sources"]
     )
     raw_response = response.choices[0].message.content
     
