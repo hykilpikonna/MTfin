@@ -38,14 +38,14 @@ def detect_anomalies():
     torrents = qb.torrents_info()
     
     print(f"\n=== Anomaly 1: Torrents with missing Jellyfin links ===")
-    torrents_with_missing_links = []
+    torrents_with_missing_links = set()
     
     for t in torrents:
         match = re.search(r'\[(tt\d+)\]', t.name)
         if match:
             tt_id = match.group(1)
             if tt_id not in jellyfin_tt_ids:
-                torrents_with_missing_links.append((t.name, tt_id))
+                torrents_with_missing_links.add((t.name, tt_id))
                 
     if torrents_with_missing_links:
         for name, tt_id in torrents_with_missing_links:
@@ -54,7 +54,7 @@ def detect_anomalies():
         print("No torrent anomalies found.")
         
     print(f"\n=== Anomaly 2: Local DL folders with missing Jellyfin links ===")
-    local_folders_with_missing_links = []
+    local_folders_with_missing_links = set()
     
     dl_path = Path(DEFAULT_DL_DIR)
     if dl_path.exists():
@@ -63,7 +63,7 @@ def detect_anomalies():
             if match:
                 tt_id = match.group(1)
                 if tt_id not in jellyfin_tt_ids:
-                    local_folders_with_missing_links.append((path.name, tt_id))
+                    local_folders_with_missing_links.add((path.name, tt_id))
                     
         if local_folders_with_missing_links:
             for name, tt_id in local_folders_with_missing_links:
