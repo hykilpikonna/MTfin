@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 from datetime import datetime
 import time
+import tomllib
+from utils import DEFAULT_DL_DIR, DEFAULT_JELLYFIN_DIR
 
 def run_workflow(imdb_id: str, dl_dir: str, jellyfin_dir: str, logs_dir: Path, errors_dir: Path):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -39,8 +41,8 @@ def run_workflow(imdb_id: str, dl_dir: str, jellyfin_dir: str, logs_dir: Path, e
 def main():
     parser = argparse.ArgumentParser(description="Multithreading launcher for IMDB workflow.")
     parser.add_argument("imdb_ids", nargs="+", help="The IMDb IDs to process (e.g., tt38872297 tt0903747)")
-    parser.add_argument("--dl-dir", type=str, default="/data/QB", help="The qBittorrent download directory")
-    parser.add_argument("--jellyfin-dir", type=str, default="/data/Jellyfin", help="The base Jellyfin library directory")
+    parser.add_argument("--dl-dir", type=str, default=DEFAULT_DL_DIR, help="The qBittorrent download directory")
+    parser.add_argument("--jellyfin-dir", type=str, default=DEFAULT_JELLYFIN_DIR, help="The base Jellyfin library directory")
     parser.add_argument("--workers", type=int, default=4, help="Number of concurrent workers")
     parser.add_argument("--delay", type=float, default=5.0, help="Delay in seconds between starting each workflow")
     

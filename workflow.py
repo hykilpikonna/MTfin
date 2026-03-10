@@ -2,6 +2,7 @@ import json
 import time
 from pathlib import Path
 
+from utils import DEFAULT_DL_DIR, DEFAULT_JELLYFIN_DIR
 from utils_mteam import (
     mteam_imdb_info,
     search_mteam_torrents,
@@ -82,7 +83,7 @@ def wait_for_download(qb, t_hash: str):
     print("Download complete!")
 
 
-def process_imdb_workflow(imdb_id: str, dl_dir: str = "/data/QB", jellyfin_base_dir: str = "/data/Jellyfin"):
+def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_base_dir: str = DEFAULT_JELLYFIN_DIR):
     """
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
     """
@@ -212,8 +213,8 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Workflow to automatically find, download, and map torrents for an IMDb ID into Jellyfin.")
     parser.add_argument("imdb_id", type=str, help="The IMDb ID to process (e.g., tt38872297)")
-    parser.add_argument("--dl-dir", type=str, default="/data/QB", help="The qBittorrent download directory")
-    parser.add_argument("--jellyfin-dir", type=str, default="/data/Jellyfin", help="The base Jellyfin library directory")
+    parser.add_argument("--dl-dir", type=str, default=DEFAULT_DL_DIR, help="The qBittorrent download directory")
+    parser.add_argument("--jellyfin-dir", type=str, default=DEFAULT_JELLYFIN_DIR, help="The base Jellyfin library directory")
     
     args = parser.parse_args()
     

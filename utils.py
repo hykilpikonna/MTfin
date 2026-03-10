@@ -1,7 +1,12 @@
 import json
 import hashlib
+import tomllib
 from pathlib import Path
 from functools import wraps
+
+config = tomllib.loads(Path("config.toml").read_text(encoding="utf-8"))
+DEFAULT_DL_DIR = config["paths"]["qb_download_dir"]
+DEFAULT_JELLYFIN_DIR = config["paths"]["jellyfin_dir"]
 
 def _disk_cache_decorator(subdir_name: str, ext: str, read_func, write_func, should_cache = None):
     """
