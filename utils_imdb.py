@@ -3,7 +3,7 @@ import urllib.request
 import urllib.parse
 from utils import with_disk_cache
 
-@with_disk_cache('imdbapi_info')
+@with_disk_cache('imdbapi_info', should_cache=lambda res: res.get("code") == "0")
 def get_imdb_info(imdb_id: str) -> dict:
     """
     Fetch IMDb info from imdbapi.dev as a fallback or replacement for M-Team.
