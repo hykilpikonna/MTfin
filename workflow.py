@@ -27,11 +27,15 @@ from utils_ai import (
 )
 
 
+VALID_MEDIA_EXTS = {".mkv", ".mp4", ".avi", ".ts", ".m2ts", ".webm", ".srt", ".ass", ".ssa", ".sub", ".idx"}
+
 def format_file_tree(file_tree: list) -> str:
     """Helper to convert the qB file tree output into simple relative paths for the LLM prompt"""
     lines = []
     for f in file_tree:
-        lines.append(f.get("name", ""))
+        name = f.get("name", "")
+        if Path(name).suffix.lower() in VALID_MEDIA_EXTS:
+            lines.append(name)
     return "\n".join(lines)
 
 def sanitize_filename(name: str) -> str:
