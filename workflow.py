@@ -270,30 +270,31 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_b
     title_dir = sanitize_filename(f"{title} ({year})")
     print(f"Found Title: {title_dir}")
 
-    print(f"\n=== [0.2] Checking if already exists in file system ===")
-    fs_match_dir = check_local_filesystem(dl_dir, imdb_id)
     new_name = sanitize_filename(f"{year} {title} [{imdb_id}]")
 
-    if fs_match_dir:
-        print(f"Found existing file/directory in file system: {fs_match_dir.name}, skipping qBit check, search, and download.")
-        process_local_file(fs_match_dir, title_dir, imdb_id, jellyfin_base_dir)
-        return
-
-    print(f"\n=== [0.5] Checking if torrent already exists in qBittorrent ===")
+    print(f"\n=== [0.2] Checking if torrent already exists in qBittorrent ===")
     qb = get_qb_client()
     existing_t_hash = check_qbittorrent(qb, imdb_id)
 
     hashes_to_process = []
 
     if existing_t_hash:
-        print(f"Found existing torrent with hash {existing_t_hash}, skipping search and download.")
+        print(f"Found existing torrent with hash {existing_t_hash}, skipping local check, search, and download.")
         rename_torrent_and_folder(qb, existing_t_hash, new_name)
         
-        print(f"\n=== [0.6] Waiting for existing download to finish ===")
+        print(f"\n=== [0.3] Waiting for existing download to finish ===")
         wait_for_download(qb, existing_t_hash)
         
         hashes_to_process.append((existing_t_hash, "existing"))
     else:
+        print(f"\n=== [0.5] Checking if already exists in file system ===")
+        fs_match_dir = check_local_filesystem(dl_dir, imdb_id)
+        
+        if fs_match_dir:
+            print(f"Found existing file/directory in file system: {fs_match_dir.name}, skipping search and download.")
+            process_local_file(fs_match_dir, title_dir, imdb_id, jellyfin_base_dir)
+            return
+            
         hashes_to_process = search_and_download_mteam(qb, imdb_id, new_name, dl_dir)
 
     # Process qB torrents
