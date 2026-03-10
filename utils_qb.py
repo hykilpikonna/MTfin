@@ -99,16 +99,31 @@ def rename_torrent_and_folder(qb_client: Client, torrent_hash: str, new_name: st
     t_info = info[0]
     old_name = t_info.name
     
-    print(f"Renaming torrent and top-level dir from '{old_name}' to '{new_name}'")
+    print(f"Renaming torrent name from '{old_name}' to '{new_name}'")
     try:
         qb_client.torrents_rename(torrent_hash=torrent_hash, new_torrent_name=new_name)
     except Exception as e:
         print(f"Failed to rename torrent: {e}")
         
     try:
-        qb_client.torrents_rename_folder(torrent_hash=torrent_hash, old_path=old_name, new_path=new_name)
+        files = qb_client.torrents_files(torrent_hash=torrent_hash)
+        if files:
+            root_dirs = set()
+            for f in files:
+                parts = getattr(f, "name", "").replace("\\", "/").split("/")
+                if len(parts) > 1:
+                    root_dirs.add(parts[0])
+                else:
+                    root_dirs.add("") # Single file at base
+                    
+            if len(root_dirs) == 1 and "" not in root_dirs:
+                old_folder = list(root_dirs)[0]
+                if old_folder != new_name:
+                    print(f"Renaming top-level dir from '{old_folder}' to '{new_name}'")
+                    qb_client.torrents_rename_folder(torrent_hash=torrent_hash, old_path=old_folder, new_path=new_name)
+            else:
+                print("Multiple root folders or single files at base detected. Skipping folder rename.")
     except Exception as e:
-        # Might be a single-file torrent or no root folder
         print(f"Failed to rename folder: {e}")
 
     import time
