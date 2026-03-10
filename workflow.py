@@ -1,3 +1,4 @@
+import re
 import json
 import time
 from pathlib import Path
@@ -32,6 +33,10 @@ def format_file_tree(file_tree: list) -> str:
     for f in file_tree:
         lines.append(f.get("name", ""))
     return "\n".join(lines)
+
+def sanitize_filename(name: str) -> str:
+    """Replaces invalid characters in filenames with spaces."""
+    return re.sub(r'[\\/*?:"<>|]', " ", name).strip()
 
 
 def prepare_file_tree_paths(file_tree: list, new_name: str, dl_dir: str) -> Path:
@@ -260,12 +265,14 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_b
         title = imdb_info['data'].get('title', 'Unknown_Title')
         year = imdb_info['data'].get('year', '')
         
-    title_dir = f"{title} ({year})"
+    title = sanitize_filename(title)
+        
+    title_dir = sanitize_filename(f"{title} ({year})")
     print(f"Found Title: {title_dir}")
 
     print(f"\n=== [0.2] Checking if already exists in file system ===")
     fs_match_dir = check_local_filesystem(dl_dir, imdb_id)
-    new_name = f"{year} {title} [{imdb_id}]".strip()
+    new_name = sanitize_filename(f"{year} {title} [{imdb_id}]")
 
     if fs_match_dir:
         print(f"Found existing file/directory in file system: {fs_match_dir.name}, skipping qBit check, search, and download.")
