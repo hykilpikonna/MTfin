@@ -1,3 +1,4 @@
+import os
 import json
 import hashlib
 import tomllib
@@ -27,7 +28,7 @@ def _disk_cache_decorator(subdir_name: str, ext: str, read_func, write_func, sho
                     
             cache_p = Path(__file__).parent / 'data' / subdir_name / f"{key}{ext}"
             
-            if cache_p.is_file():
+            if cache_p.is_file() and not os.getenv("NOCACHE"):
                 try:
                     return read_func(cache_p)
                 except Exception:
