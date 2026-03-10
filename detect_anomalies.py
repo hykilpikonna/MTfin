@@ -1,4 +1,5 @@
 import re
+import argparse
 from pathlib import Path
 from utils import DEFAULT_DL_DIR, DEFAULT_JELLYFIN_DIR
 from utils_qb import get_qb_client
@@ -28,7 +29,7 @@ def get_tt_ids_in_jellyfin(jellyfin_dir):
                 
     return found_ids
 
-def detect_anomalies():
+def detect_anomalies(expected_tt_ids=None):
     print("Gathering basic info...")
     jellyfin_tt_ids = get_tt_ids_in_jellyfin(DEFAULT_JELLYFIN_DIR)
     
@@ -92,6 +93,19 @@ def detect_anomalies():
             print("No short TV series anomalies found.")
     else:
         print(f"TV directory {tv_path} does not exist.")
+        
+    if expected_tt_ids:
+        print(f"\n=== Anomaly 4: Provided IMDb IDs missing from Jellyfin ===")
+        missing_ids = [tt_id for tt_id in expected_tt_ids if tt_id not in jellyfin_tt_ids]
+        if missing_ids:
+            for tt_id in missing_ids:
+                print(f"Warning: Expected ID '{tt_id}' is not linked in Jellyfin!")
+        else:
+            print("All provided IMDb IDs are present in Jellyfin.")
 
 if __name__ == "__main__":
-    detect_anomalies()
+    parser = argparse.ArgumentParser(description="Find anomalies between torrents, local downloads, and Jellyfin folders.")
+    parser.add_argument("tt_ids", nargs="*", help="Optional space-separated list of IMDb IDs (e.g., tt1234567 tt7654321) to verify their presence in Jellyfin.")
+    args = parser.parse_args()
+    
+    detect_anomalies(expected_tt_ids=args.tt_ids)
