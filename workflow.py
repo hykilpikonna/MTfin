@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 
 from utils import DEFAULT_DL_DIR, DEFAULT_JELLYFIN_DIR
+from utils_imdb import get_imdb_info
 from utils_mteam import (
     mteam_imdb_info,
     search_mteam_torrents,
@@ -240,17 +241,25 @@ def process_local_file(fs_path: Path, title_dir: str, imdb_id: str, jellyfin_bas
     apply_rename_mapping(mapping, base_src_dir=src_dir_for_mapping, base_dst_dir=jellyfin_base)
     print(f"Finished processing local file: {fs_path.name}")
 
-def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_base_dir: str = DEFAULT_JELLYFIN_DIR):
+def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_base_dir: str = DEFAULT_JELLYFIN_DIR, imdb_source: str = "mteam"):
     """
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
     """
-    print(f"=== [0] Fetching IMDB info for {imdb_id} ===")
-    imdb_info = mteam_imdb_info(imdb_id)
-    if 'data' not in imdb_info:
-        raise ValueError(f"Failed to get IMDB info from M-Team: {imdb_info}")
+    print(f"=== [0] Fetching IMDB info for {imdb_id} from {imdb_source} ===")
     
-    title = imdb_info['data'].get('title', 'Unknown_Title')
-    year = imdb_info['data'].get('year', '')
+    if imdb_source == "imdbapi":
+        imdb_info = get_imdb_info(imdb_id)
+        if 'data' not in imdb_info or not imdb_info['data']:
+            raise ValueError(f"Failed to get IMDB info from imdbapi: {imdb_info}")
+        title = imdb_info['data'].get('primaryTitle', 'Unknown_Title')
+        year = imdb_info['data'].get('startYear', '')
+    else:
+        imdb_info = mteam_imdb_info(imdb_id)
+        if 'data' not in imdb_info:
+            raise ValueError(f"Failed to get IMDB info from M-Team: {imdb_info}")
+        title = imdb_info['data'].get('title', 'Unknown_Title')
+        year = imdb_info['data'].get('year', '')
+        
     title_dir = f"{title} ({year})"
     print(f"Found Title: {title_dir}")
 
@@ -291,7 +300,8 @@ if __name__ == "__main__":
     parser.add_argument("imdb_id", type=str, help="The IMDb ID to process (e.g., tt38872297)")
     parser.add_argument("--dl-dir", type=str, default=DEFAULT_DL_DIR, help="The qBittorrent download directory")
     parser.add_argument("--jellyfin-dir", type=str, default=DEFAULT_JELLYFIN_DIR, help="The base Jellyfin library directory")
+    parser.add_argument("--imdb-source", type=str, choices=["mteam", "imdbapi"], default="mteam", help="The source for IMDb metadata (mteam or imdbapi)")
     
     args = parser.parse_args()
     
-    process_imdb_workflow(args.imdb_id, dl_dir=args.dl_dir, jellyfin_base_dir=args.jellyfin_dir)
+    process_imdb_workflow(args.imdb_id, dl_dir=args.dl_dir, jellyfin_base_dir=args.jellyfin_dir, imdb_source=args.imdb_source)
