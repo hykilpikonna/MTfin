@@ -200,7 +200,7 @@ def process_qb_torrent(qb, t_hash: str, tid: str, new_name: str, dl_dir: str, ti
     apply_rename_mapping(mapping, base_src_dir=src_dir_for_mapping, base_dst_dir=jellyfin_base)
     print(f"Finished processing torrent: {tid}")
 
-def process_local_file(fs_path: Path, dl_dir: str, title_dir: str, imdb_id: str, jellyfin_base_dir: str):
+def process_local_file(fs_path: Path, title_dir: str, imdb_id: str, jellyfin_base_dir: str):
     """
     Generates an LLM rename mapping for purely local files/folders (skipping qBittorrent) 
     and creates symbolic links to the Jellyfin library.
@@ -218,7 +218,8 @@ def process_local_file(fs_path: Path, dl_dir: str, title_dir: str, imdb_id: str,
                 rel_path = p.relative_to(fs_path.parent)
                 file_tree.append({"name": str(rel_path.as_posix())})
                 
-    src_dir_for_mapping = prepare_file_tree_paths(file_tree, fs_path.name, dl_dir)
+    # Use fs_path.parent instead of dl_dir because fs_path may be deeply nested
+    src_dir_for_mapping = prepare_file_tree_paths(file_tree, fs_path.name, str(fs_path.parent))
     file_tree_str = format_file_tree(file_tree)
     
     prompt_text = f"Base directory: `{title_dir}`\n\n{file_tree_str}"
@@ -259,7 +260,7 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_b
 
     if fs_match_dir:
         print(f"Found existing file/directory in file system: {fs_match_dir.name}, skipping qBit check, search, and download.")
-        process_local_file(fs_match_dir, dl_dir, title_dir, imdb_id, jellyfin_base_dir)
+        process_local_file(fs_match_dir, title_dir, imdb_id, jellyfin_base_dir)
         return
 
     print(f"\n=== [0.5] Checking if torrent already exists in qBittorrent ===")
