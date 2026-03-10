@@ -27,6 +27,10 @@ username = "cat"
 password = "meow"
 otp_key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
 api_key = "01234567-0123-0123-0123-0123456789ab"
+
+[paths]
+qb_download_dir = "/data/QB"
+jellyfin_dir = "/data/Jellyfin"
 ```
 
 2. 装依赖：`uv sync`
