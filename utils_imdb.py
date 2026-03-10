@@ -9,7 +9,7 @@ def get_imdb_info(imdb_id: str) -> dict:
     Fetch IMDb info from imdbapi.dev as a fallback or replacement for M-Team.
     """
     query = urllib.parse.quote(imdb_id)
-    url = f"https://api.imdbapi.dev/search/titles?query={query}"
+    url = f"https://api.imdbapi.dev/titles/{query}"
     
     req = urllib.request.Request(url, headers={
         'accept': 'application/json',
@@ -19,12 +19,8 @@ def get_imdb_info(imdb_id: str) -> dict:
     try:
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
-            if data and "titles" in data and len(data["titles"]) > 0:
-                # Return the matching title info
-                for title in data["titles"]:
-                    if title.get("id") == imdb_id:
-                        return {"code": "0", "message": "SUCCESS", "data": title}
-                return {"code": "0", "message": "SUCCESS", "data": data["titles"][0]}
+            if data and data.get("id") == imdb_id:
+                return {"code": "0", "message": "SUCCESS", "data": data}
     except Exception as e:
         print(f"Error fetching from imdbapi for {imdb_id}: {e}")
         
