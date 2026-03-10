@@ -72,6 +72,26 @@ def detect_anomalies():
             print("No local folder anomalies found.")
     else:
         print(f"Download directory {DEFAULT_DL_DIR} does not exist.")
+        
+    print(f"\n=== Anomaly 3: TV series with < 6 episodes (Possible Movies) ===")
+    tv_path = Path(DEFAULT_JELLYFIN_DIR) / "TV"
+    short_series = []
+    video_exts = {".mkv", ".mp4", ".avi", ".ts", ".m2ts", ".webm"}
+    
+    if tv_path.exists():
+        for series_dir in tv_path.iterdir():
+            if series_dir.is_dir():
+                video_count = sum(1 for p in series_dir.rglob('*') if p.is_file() and p.suffix.lower() in video_exts)
+                if 0 < video_count < 6:
+                    short_series.append((series_dir.name, video_count))
+                    
+        if short_series:
+            for name, count in short_series:
+                print(f"Warning: TV series '{name}' has only {count} video file(s).")
+        else:
+            print("No short TV series anomalies found.")
+    else:
+        print(f"TV directory {tv_path} does not exist.")
 
 if __name__ == "__main__":
     detect_anomalies()
