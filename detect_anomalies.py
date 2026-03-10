@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 from utils import DEFAULT_DL_DIR, DEFAULT_JELLYFIN_DIR
 from utils_qb import get_qb_client
+from utils_imdb import get_imdb_info
 
 def get_tt_ids_in_jellyfin(jellyfin_dir):
     """
@@ -96,10 +97,16 @@ def detect_anomalies(expected_tt_ids=None):
         
     if expected_tt_ids:
         print(f"\n=== Anomaly 4: Provided IMDb IDs missing from Jellyfin ===")
-        missing_ids = [tt_id for tt_id in expected_tt_ids if tt_id not in jellyfin_tt_ids]
+        unique_expected = set(expected_tt_ids)
+        missing_ids = [tt_id for tt_id in unique_expected if tt_id not in jellyfin_tt_ids]
         if missing_ids:
             for tt_id in missing_ids:
-                print(f"Warning: Expected ID '{tt_id}' is not linked in Jellyfin!")
+                try:
+                    info = get_imdb_info(tt_id)
+                    title = info.get('data', {}).get('primaryTitle', 'Unknown Title')
+                except Exception:
+                    title = "Unknown Title"
+                print(f"Warning: Expected ID '{tt_id}' ({title}) is not linked in Jellyfin!")
         else:
             print("All provided IMDb IDs are present in Jellyfin.")
 
