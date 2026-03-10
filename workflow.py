@@ -90,7 +90,7 @@ def check_local_filesystem(dl_dir: str, imdb_id: str):
     """
     dl_path = Path(dl_dir)
     if dl_path.exists():
-        for item in dl_path.iterdir():
+        for item in dl_path.rglob('*'):
             if f"[{imdb_id}]" in item.name:
                 return item
     return None
