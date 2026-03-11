@@ -105,16 +105,17 @@ def check_local_filesystem(dl_dir: str, imdb_id: str):
                 return item
     return None
 
-def check_qbittorrent(qb, imdb_id: str):
+def check_qbittorrent(qb, imdb_id: str) -> list[str]:
     """
     Checks qBittorrent for any existing torrent that has the IMDb ID in its name.
-    Returns the torrent hash if found, or None.
+    Returns a list of torrent hashes found.
     """
     existing_torrents = qb.torrents_info()
+    hashes = []
     for t in existing_torrents:
         if f"[{imdb_id}]" in t.name:
-            return t.hash
-    return None
+            hashes.append(t.hash)
+    return hashes
 
 def search_and_download_mteam(qb, imdb_id: str, new_name: str, dl_dir: str) -> list:
     """
@@ -278,18 +279,19 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_b
 
     print(f"\n=== [0.2] Checking if torrent already exists in qBittorrent ===")
     qb = get_qb_client()
-    existing_t_hash = check_qbittorrent(qb, imdb_id)
+    existing_t_hashes = check_qbittorrent(qb, imdb_id)
 
     hashes_to_process = []
 
-    if existing_t_hash:
-        print(f"Found existing torrent with hash {existing_t_hash}, skipping local check, search, and download.")
-        rename_torrent_and_folder(qb, existing_t_hash, new_name)
-        
-        print(f"\n=== [0.3] Waiting for existing download to finish ===")
-        wait_for_download(qb, existing_t_hash)
-        
-        hashes_to_process.append((existing_t_hash, "existing"))
+    if existing_t_hashes:
+        print(f"Found {len(existing_t_hashes)} existing torrent(s), skipping local check, search, and download.")
+        for existing_t_hash in existing_t_hashes:
+            rename_torrent_and_folder(qb, existing_t_hash, new_name)
+            
+            print(f"\n=== [0.3] Waiting for existing download to finish ===")
+            wait_for_download(qb, existing_t_hash)
+            
+            hashes_to_process.append((existing_t_hash, "existing"))
     else:
         print(f"\n=== [0.5] Checking if already exists in file system ===")
         fs_match_dir = check_local_filesystem(dl_dir, imdb_id)
