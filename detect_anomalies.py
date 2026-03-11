@@ -97,11 +97,15 @@ def detect_anomalies(expected_tt_ids=None):
         
     print(f"\n=== Anomaly 5: Broken links in Jellyfin directories ===")
     broken_links = []
+    linked_real_paths = []
     jellyfin_path = Path(DEFAULT_JELLYFIN_DIR)
     if jellyfin_path.exists():
         for p in jellyfin_path.rglob('*'):
-            if p.is_symlink() and not p.exists():
-                broken_links.append(p)
+            if p.is_symlink():
+                if not p.exists():
+                    broken_links.append(p)
+                else:
+                    linked_real_paths.append(str(p.resolve()))
                 
         if broken_links:
             for p in broken_links:
@@ -110,6 +114,35 @@ def detect_anomalies(expected_tt_ids=None):
             print("No broken links found.")
     else:
         print(f"Jellyfin directory {jellyfin_path} does not exist.")
+        
+    print(f"\n=== Anomaly 6: Torrents with TT IDs but NO files linked ===")
+    torrents_without_file_links = []
+    for t in torrents:
+        match = re.search(r'\[(tt\d+)\]', t.name)
+        if match:
+            tt_id = match.group(1)
+            # Some torrents might not have finished downloading or have no content_path yet
+            if hasattr(t, 'content_path') and t.content_path:
+                content_path = str(Path(t.content_path).resolve())
+                has_link = False
+                for rp in linked_real_paths:
+                    if rp == content_path or rp.startswith(content_path + "/") or rp.startswith(content_path + "\\"):
+                        has_link = True
+                        break
+                
+                if not has_link:
+                    torrents_without_file_links.append((t.name, tt_id))
+                    
+    if torrents_without_file_links:
+        for name, tt_id in torrents_without_file_links:
+            try:
+                info = get_imdb_info(tt_id)
+                title = info.get('data', {}).get('primaryTitle', 'Unknown Title')
+            except Exception:
+                title = "Unknown Title"
+            print(f"Warning: Torrent '{name}' (ID {tt_id} - {title}) has zero files linked in Jellyfin!")
+    else:
+        print("All downloaded torrents have at least one file linked in Jellyfin.")
         
     if expected_tt_ids:
         print(f"\n=== Anomaly 4: Provided IMDb IDs missing from Jellyfin ===")
