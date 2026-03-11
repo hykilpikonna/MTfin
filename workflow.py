@@ -251,7 +251,7 @@ def process_local_file(fs_path: Path, title_dir: str, imdb_id: str, jellyfin_bas
     apply_rename_mapping(mapping, base_src_dir=src_dir_for_mapping, base_dst_dir=jellyfin_base)
     print(f"Finished processing local file: {fs_path.name}")
 
-def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_base_dir: str = DEFAULT_JELLYFIN_DIR, imdb_source: str = "mteam"):
+def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_base_dir: str = DEFAULT_JELLYFIN_DIR, imdb_source: str = "imdbapi", ignore_existing: bool = False):
     """
     Workflow to automatically find, download, and map torrents for an IMDb ID into a Jellyfin library.
     """
@@ -277,30 +277,32 @@ def process_imdb_workflow(imdb_id: str, dl_dir: str = DEFAULT_DL_DIR, jellyfin_b
 
     new_name = sanitize_filename(f"{year} {title} [{imdb_id}]")
 
-    print(f"\n=== [0.2] Checking if torrent already exists in qBittorrent ===")
     qb = get_qb_client()
-    existing_t_hashes = check_qbittorrent(qb, imdb_id)
-
     hashes_to_process = []
+    
+    if not ignore_existing:
+        print(f"\n=== [0.2] Checking if torrent already exists in qBittorrent ===")
+        existing_t_hashes = check_qbittorrent(qb, imdb_id)
 
-    if existing_t_hashes:
-        print(f"Found {len(existing_t_hashes)} existing torrent(s), skipping local check, search, and download.")
-        for existing_t_hash in existing_t_hashes:
-            rename_torrent_and_folder(qb, existing_t_hash, new_name)
+        if existing_t_hashes:
+            print(f"Found {len(existing_t_hashes)} existing torrent(s), skipping local check, search, and download.")
+            for existing_t_hash in existing_t_hashes:
+                rename_torrent_and_folder(qb, existing_t_hash, new_name)
+                
+                print(f"\n=== [0.3] Waiting for existing download to finish ===")
+                wait_for_download(qb, existing_t_hash)
+                
+                hashes_to_process.append((existing_t_hash, "existing"))
+        else:
+            print(f"\n=== [0.5] Checking if already exists in file system ===")
+            fs_match_dir = check_local_filesystem(dl_dir, imdb_id)
             
-            print(f"\n=== [0.3] Waiting for existing download to finish ===")
-            wait_for_download(qb, existing_t_hash)
-            
-            hashes_to_process.append((existing_t_hash, "existing"))
-    else:
-        print(f"\n=== [0.5] Checking if already exists in file system ===")
-        fs_match_dir = check_local_filesystem(dl_dir, imdb_id)
-        
-        if fs_match_dir:
-            print(f"Found existing file/directory in file system: {fs_match_dir.name}, skipping search and download.")
-            process_local_file(fs_match_dir, title_dir, imdb_id, jellyfin_base_dir)
-            return
-            
+            if fs_match_dir:
+                print(f"Found existing file/directory in file system: {fs_match_dir.name}, skipping search and download.")
+                process_local_file(fs_match_dir, title_dir, imdb_id, jellyfin_base_dir)
+                return
+
+    if not hashes_to_process:
         hashes_to_process = search_and_download_mteam(qb, imdb_id, new_name, dl_dir)
 
     # Process qB torrents
@@ -314,8 +316,9 @@ if __name__ == "__main__":
     parser.add_argument("imdb_id", type=str, help="The IMDb ID to process (e.g., tt38872297)")
     parser.add_argument("--dl-dir", type=str, default=DEFAULT_DL_DIR, help="The qBittorrent download directory")
     parser.add_argument("--jellyfin-dir", type=str, default=DEFAULT_JELLYFIN_DIR, help="The base Jellyfin library directory")
-    parser.add_argument("--imdb-source", type=str, choices=["mteam", "imdbapi"], default="mteam", help="The source for IMDb metadata (mteam or imdbapi)")
+    parser.add_argument("--imdb-source", type=str, choices=["mteam", "imdbapi"], default="imdbapi", help="The source for IMDb metadata (mteam or imdbapi)")
+    parser.add_argument("--ignore-existing", action="store_true", help="Ignore any existing torrents or local files and force a new search and download.")
     
     args = parser.parse_args()
     
-    process_imdb_workflow(args.imdb_id, dl_dir=args.dl_dir, jellyfin_base_dir=args.jellyfin_dir, imdb_source=args.imdb_source)
+    process_imdb_workflow(args.imdb_id, dl_dir=args.dl_dir, jellyfin_base_dir=args.jellyfin_dir, imdb_source=args.imdb_source, ignore_existing=args.ignore_existing)
