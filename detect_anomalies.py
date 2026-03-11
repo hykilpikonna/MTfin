@@ -95,6 +95,22 @@ def detect_anomalies(expected_tt_ids=None):
     else:
         print(f"TV directory {tv_path} does not exist.")
         
+    print(f"\n=== Anomaly 5: Broken links in Jellyfin directories ===")
+    broken_links = []
+    jellyfin_path = Path(DEFAULT_JELLYFIN_DIR)
+    if jellyfin_path.exists():
+        for p in jellyfin_path.rglob('*'):
+            if p.is_symlink() and not p.exists():
+                broken_links.append(p)
+                
+        if broken_links:
+            for p in broken_links:
+                print(f"Warning: Broken link found: {p}")
+        else:
+            print("No broken links found.")
+    else:
+        print(f"Jellyfin directory {jellyfin_path} does not exist.")
+        
     if expected_tt_ids:
         print(f"\n=== Anomaly 4: Provided IMDb IDs missing from Jellyfin ===")
         unique_expected = set(expected_tt_ids)
