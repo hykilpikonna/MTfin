@@ -144,6 +144,27 @@ def detect_anomalies(expected_tt_ids=None):
     else:
         print("All downloaded torrents have at least one file linked in Jellyfin.")
         
+    print(f"\n=== Anomaly 7: Torrents with missing files on disk ===")
+    torrents_with_missing_files = []
+    for t in torrents:
+        try:
+            files = qb.torrents_files(torrent_hash=t.hash)
+            if files:
+                first_file_name = getattr(files[0], 'name', '')
+                save_path = getattr(t, 'save_path', '')
+                if first_file_name and save_path:
+                    full_path = Path(save_path) / first_file_name
+                    if not full_path.exists():
+                        torrents_with_missing_files.append(t.name)
+        except Exception:
+            pass
+            
+    if torrents_with_missing_files:
+        for name in torrents_with_missing_files:
+            print(f"Warning: Torrent '{name}' is missing files on disk!")
+    else:
+        print("All torrents have their files intact on disk.")
+        
     if expected_tt_ids:
         print(f"\n=== Anomaly 4: Provided IMDb IDs missing from Jellyfin ===")
         unique_expected = set(expected_tt_ids)
