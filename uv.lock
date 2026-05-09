@@ -481,6 +481,7 @@ dependencies = [
     { name = "playwright" },
     { name = "pyotp" },
     { name = "qbittorrent-api" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -490,6 +491,7 @@ requires-dist = [
     { name = "playwright" },
     { name = "pyotp" },
     { name = "qbittorrent-api", specifier = ">=2025.11.1" },
+    { name = "requests", specifier = ">=2.32.0" },
 ]
 
 [[package]]

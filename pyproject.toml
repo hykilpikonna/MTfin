@@ -10,4 +10,5 @@ dependencies = [
     "playwright",
     "pyotp",
     "qbittorrent-api>=2025.11.1",
+    "requests>=2.32.0",
 ]

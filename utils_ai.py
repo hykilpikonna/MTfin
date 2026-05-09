@@ -3,9 +3,9 @@ import json
 from pathlib import Path
 from openai import OpenAI
 
-from utils import with_disk_cache
+from utils import config, with_disk_cache
 
-client = OpenAI()
+client = OpenAI(api_key=config["openai"]["token"])
 
 @with_disk_cache('select_best_torrents')
 def select_best_torrents(torrents_text: str) -> str:
